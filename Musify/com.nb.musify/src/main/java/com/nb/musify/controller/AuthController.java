@@ -1,5 +1,6 @@
 package com.nb.musify.controller;
 
+import com.nb.musify.dto.request.ForgotPasswordRequest;
 import com.nb.musify.dto.request.LoginUserRequest;
 import com.nb.musify.dto.request.RefreshTokenRequest;
 import com.nb.musify.dto.request.RegisterUserRequest;
@@ -38,6 +39,12 @@ public class AuthController {
     @PostMapping("/refreshAccessToken")
     public ResponseEntity<AppUserResponse> refreshAccessToken(@Valid @RequestBody RefreshTokenRequest request){
         AppUserResponse response = authService.refreshAccessToken(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgotPassword")
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
+        MessageResponse response = authService.forgotPassword(request);
         return ResponseEntity.ok(response);
     }
 

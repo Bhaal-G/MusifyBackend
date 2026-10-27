@@ -1,13 +1,14 @@
 package com.nb.musify.serviceImpl;
 
+import com.google.auth.oauth2.AccessToken;
+import com.nb.musify.dto.request.ForgotPasswordRequest;
 import com.nb.musify.dto.request.LoginUserRequest;
 import com.nb.musify.dto.request.RefreshTokenRequest;
 import com.nb.musify.dto.request.RegisterUserRequest;
 import com.nb.musify.dto.response.AppUserResponse;
 import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.entity.AppUser;
-import com.nb.musify.exception.EmailAlreadyExistsException;
-import com.nb.musify.exception.InvalidCredentialsException;
+import com.nb.musify.exception.*;
 import com.nb.musify.repository.AppUserRepository;
 import com.nb.musify.service.AuthService;
 import com.nb.musify.service.EmailService;
@@ -72,7 +73,38 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AppUserResponse refreshAccessToken(RefreshTokenRequest request) {
-        String refreshToken = request
+        String refreshToken = request.getRefreshToken();
+        String email= jwtUtil.extractEmail(refreshToken);
+
+        if(!jwtUtil.isRefreshToken(refreshToken)){
+            throw new InvalidTokenException("Invalid Token Request");
+        }
+
+        AppUser appUser = appUserRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(()-> new InvalidTokenException("Invalid refresh token"));
+
+        if(!jwtUtil.validateToken(refreshToken,email)){
+            throw new TokenExpiredException("Refresh token expired or invalid");
+        }
+        String newAccessToken = jwtUtil.generateAccessToken(appUser.getId(),appUser.getName(),appUser.getEmail(),appUser.getRole());
+
+        return AppUserResponse.fromEntity(appUser,newAccessToken,refreshToken);
+
+    }
+
+    @Override
+    public MessageResponse forgotPassword(ForgotPasswordRequest request) {
+        AppUser appUser = appUserRepository.findByEmail(request.getEmail())
+                .orElseThrow(()->new ResourceNotFoundException("User not found with email: "+request.getEmail()));
+
+        String tempPassword= generateTemporaryPassword();
+
+        appUser.setPassword(passwordEncoder.encode(tempPassword));
+        appUserRepository.save(appUser);
+
+        emailService.sendCredentialEmail(appUser.getEmail(),appUser.getName(),tempPassword);
+
+        return new MessageResponse("Temporary password has been sent to your email");
 
     }
 

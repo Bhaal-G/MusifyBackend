@@ -6,6 +6,8 @@ import com.nb.musify.dto.response.AppUserResponse;
 import com.nb.musify.entity.AppUser;
 import com.nb.musify.service.AppUserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -42,6 +44,27 @@ public class AppUserController {
                                          Authentication authentication){
         String email = authentication.getName();
         return ResponseEntity.ok(appUserService.getAllUsers(page,size));
+    }
+
+
+    @PatchMapping("/updateUserRole/{userId}")
+    public ResponseEntity<AppUserResponse> updateUserRole(
+            @PathVariable Long userId,
+            @RequestParam
+            @NotBlank(message = "Role is required")
+            @Pattern(
+                    regexp = "^(USER|ADMIN)$",
+                    message = "Role must be either USER or ADMIN"
+            )
+            String role,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        AppUserResponse response =
+                appUserService.updateUserRole(userId, role, email);
+
+        return ResponseEntity.ok(response);
     }
 
 

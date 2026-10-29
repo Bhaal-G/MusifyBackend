@@ -4,6 +4,8 @@ import com.nb.musify.dto.request.AppUserRequest;
 import com.nb.musify.dto.response.AppUserResponse;
 import com.nb.musify.dto.response.PaginatedResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public interface AppUserService {
     AppUserResponse getUserProfile(String email);
@@ -11,4 +13,6 @@ public interface AppUserService {
     AppUserResponse updateUserProfile(AppUserRequest request, String email);
 
     PaginatedResponse<AppUserResponse> getAllUsers(int page, int size);
+
+    AppUserResponse updateUserRole(Long userId, String role, String email);
 }

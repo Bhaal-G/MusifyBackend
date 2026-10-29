@@ -78,4 +78,23 @@ public class AppUserServiceImpl implements AppUserService {
                 userPage.isFirst()
         );
     }
+
+    @Override
+    public AppUserResponse updateUserRole(Long userId, String role, String email) {
+        AppUser adminUser = appUserRepository.findByEmail(email)
+                .orElseThrow(()->new RuntimeException("User not found"));
+
+        if(!"ADMIN".equals(adminUser.getRole())){
+            throw new RuntimeException("Only admin can update user roles");
+        }
+
+        AppUser userToUpdate = appUserRepository.findById(userId)
+                .orElseThrow(()->new RuntimeException("User not found"));
+
+        String normalizedRole= role.trim().toUpperCase();
+        userToUpdate.setRole(normalizedRole);
+        AppUser updatedUser = appUserRepository.save(userToUpdate);
+
+        return AppUserResponse.fromEntity(updatedUser,null,null);
+    }
 }

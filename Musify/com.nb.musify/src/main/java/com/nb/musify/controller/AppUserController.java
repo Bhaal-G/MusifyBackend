@@ -3,7 +3,6 @@ package com.nb.musify.controller;
 
 import com.nb.musify.dto.request.AppUserRequest;
 import com.nb.musify.dto.response.AppUserResponse;
-import com.nb.musify.entity.AppUser;
 import com.nb.musify.service.AppUserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

@@ -20,7 +20,7 @@ public class FileHandlerUtil {
     @Value("${file.storage.song.path}")
     private String songStoragePath;
 
-    @Value("{file.storage.image.path}")
+    @Value("${file.storage.image.path}")
     private String imageStoragePath;
 
     public String saveSongFileWithName(MultipartFile file,String customFileName){

@@ -42,10 +42,10 @@ public class FileController {
     }
 
 
-    @GetMapping("/image/{fileName}")
-    public ResponseEntity<?> getImage(@PathVariable String fileName) {
+    @GetMapping("/image/{filename}")
+    public ResponseEntity<?> getImage(@PathVariable String filename) {
         try {
-            Resource resource = fileHandlerUtil.loadImageFile(fileName);
+            Resource resource = fileHandlerUtil.loadImageFile(filename);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)

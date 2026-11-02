@@ -56,4 +56,42 @@ public class AdminController {
 
         return ResponseEntity.ok(songService.getAllSongs(userId, page, size, search));
     }
+
+    @GetMapping("/getSongById/{id}")
+    public ResponseEntity<SongResponse> getSongById(@PathVariable Long id){
+        SongResponse song= songService.getSongById(id);
+        return ResponseEntity.ok(song);
+    }
+
+
+    @PutMapping("/updateSong/{id}")
+    public ResponseEntity<SongResponse> updateSong(
+            @PathVariable Long id,
+
+            @RequestParam("title")
+            @NotBlank(message = "Title is required")
+            @Size(max = 100, message = "Title must not exceed 100 characters")
+            String title,
+
+            @RequestParam("artist")
+            @NotBlank(message = "Artist is required")
+            @Size(max = 100, message = "Artist must not exceed 100 characters")
+            String artist,
+
+            @RequestParam("songFile")
+            MultipartFile songFile,
+
+            @RequestParam(value = "imageFile")
+            MultipartFile imageFile,
+
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        SongRequest songRequest = new SongRequest(title, artist);
+        SongResponse response = songService.updateSong(
+                id, songRequest, songFile, imageFile, email
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }

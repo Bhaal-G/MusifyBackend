@@ -104,6 +104,36 @@ public class SongServiceImpl implements SongService {
         );
     }
 
+    @Override
+    public SongResponse getSongById(Long id) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("Song not found"));
+        return SongResponse.fromEntity(song,baseUrl);
+    }
+
+    @Override
+    public SongResponse updateSong(Long id, SongRequest request, MultipartFile songFile, MultipartFile imageFile, String email) {
+        Song song = validateSongAccess(id,email);
+        updateSongMetadata(song,request);
+        if (songFile!=null && !songFile.isEmpty()){
+            deleteOldSongFile(song.getSongUrl());
+            String uniqueId = UUID.randomUUID().toString();
+            String songUrl = processSongFile(songFile,uniqueId);
+            song.setSongUrl(songUrl);
+        }
+
+        if (imageFile!=null && !imageFile.isEmpty()){
+            deleteOldImageFile(song.getImageUrl());
+            String uniqueId = UUID.randomUUID().toString();
+            String imageUrl =  processImageFile(imageFile,uniqueId);
+            song.setImageUrl(imageUrl);
+        }
+
+        Song updatedSong = songRepository.save(song);
+        return SongResponse.fromEntity(updatedSong,baseUrl);
+    }
+
+
 
     private void updateSongMetadata(Song song, SongRequest request) {
         song.setTitle(request.getTitle());
@@ -131,4 +161,41 @@ public class SongServiceImpl implements SongService {
         fileHandlerUtil.saveImageFileWithName(imageFile,imageFileName);
         return "/api/file/image/"+ imageFileName;
     }
+
+    private Song validateSongAccess(Long id, String email) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(()->new RuntimeException("Song not found"));
+
+        AppUser appUser = getUserByEmail(email);
+        boolean isOwner = song.getAppUser().getId().equals(appUser.getId());
+        boolean isAdmin = "ADMIN".equals(appUser.getRole());
+
+        if (!isOwner && !isAdmin){
+            throw new RuntimeException("You don't have permission to modify this song");
+        }
+        return song;
+    }
+
+    private void deleteOldImageFile(String imageUrl) {
+        if (imageUrl!=null){
+            String oldImageFilename = fileHandlerUtil.extractFilename(imageUrl);
+            if (oldImageFilename !=null){
+                fileHandlerUtil.deleteImageFile(oldImageFilename);
+            }
+        }
+
+    }
+
+    private void deleteOldSongFile(String songUrl) {
+        if (songUrl !=null){
+            String oldSongFilename = fileHandlerUtil.extractFilename(songUrl);
+            if (oldSongFilename != null){
+                fileHandlerUtil.deleteSongFile(oldSongFilename);
+            }
+        }
+    }
+
+
+
+
 }

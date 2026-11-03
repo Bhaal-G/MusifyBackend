@@ -2,6 +2,7 @@ package com.nb.musify.controller;
 
 
 import com.nb.musify.dto.request.SongRequest;
+import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PaginatedResponse;
 import com.nb.musify.dto.response.SongResponse;
 import com.nb.musify.service.SongService;
@@ -94,4 +95,19 @@ public class AdminController {
 
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/deleteSong/{id}")
+    public ResponseEntity<MessageResponse> deleteSong(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        MessageResponse response = songService.deleteSong(id, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+
 }

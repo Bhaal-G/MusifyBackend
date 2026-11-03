@@ -1,6 +1,7 @@
 package com.nb.musify.serviceImpl;
 
 import com.nb.musify.dto.request.SongRequest;
+import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PaginatedResponse;
 import com.nb.musify.dto.response.SongResponse;
 import com.nb.musify.entity.AppUser;
@@ -133,6 +134,14 @@ public class SongServiceImpl implements SongService {
         return SongResponse.fromEntity(updatedSong,baseUrl);
     }
 
+    @Override
+    public MessageResponse deleteSong(Long id, String email) {
+        Song song = validateSongAccess(id,email);
+        playlistSongRepository.deleteBySongId(id);
+        deleteSongFiles(song);
+        songRepository.delete(song);
+        return new MessageResponse("Song Deleted Successfully");
+    }
 
 
     private void updateSongMetadata(Song song, SongRequest request) {
@@ -195,7 +204,10 @@ public class SongServiceImpl implements SongService {
         }
     }
 
-
+    private void deleteSongFiles(Song song){
+        deleteOldSongFile(song.getSongUrl());
+        deleteOldImageFile(song.getImageUrl());
+    }
 
 
 }

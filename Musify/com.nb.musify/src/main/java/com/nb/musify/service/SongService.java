@@ -3,6 +3,7 @@ package com.nb.musify.service;
 import com.nb.musify.dto.request.SongRequest;
 import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PaginatedResponse;
+import com.nb.musify.dto.response.SongAiInsightsResponse;
 import com.nb.musify.dto.response.SongResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,4 +17,6 @@ public interface SongService {
     SongResponse updateSong(Long id, SongRequest songRequest, MultipartFile songFile, MultipartFile imageFile, String email);
 
     MessageResponse deleteSong(Long id, String email);
+
+    SongAiInsightsResponse getSongAiInsights(Long songId) throws IllegalAccessException;
 }

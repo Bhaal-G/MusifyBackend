@@ -3,12 +3,14 @@ package com.nb.musify.serviceImpl;
 import com.nb.musify.dto.request.SongRequest;
 import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PaginatedResponse;
+import com.nb.musify.dto.response.SongAiInsightsResponse;
 import com.nb.musify.dto.response.SongResponse;
 import com.nb.musify.entity.AppUser;
 import com.nb.musify.entity.Song;
 import com.nb.musify.repository.AppUserRepository;
 import com.nb.musify.repository.PlaylistSongRepository;
 import com.nb.musify.repository.SongRepository;
+import com.nb.musify.service.GenericGeminiService;
 import com.nb.musify.service.SongService;
 import com.nb.musify.util.FileHandlerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,9 @@ public class SongServiceImpl implements SongService {
     private FileHandlerUtil fileHandlerUtil;
 
     //Generic Gemini Service
+    @Autowired
+    private GenericGeminiService geminiService;
+
 
     @Value("${app.base.url}")
     private String baseUrl;
@@ -143,7 +148,42 @@ public class SongServiceImpl implements SongService {
         return new MessageResponse("Song Deleted Successfully");
     }
 
+    @Override
+    public SongAiInsightsResponse getSongAiInsights(Long songId) throws IllegalAccessException {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(()->new RuntimeException("Song not found"));
 
+        String prompt = buildSongAnalysisPrompt(song);
+        return geminiService.generateContent(prompt, SongAiInsightsResponse.class);
+    }
+
+    private String buildSongAnalysisPrompt(Song song) {
+        return String.format("""
+            Analyze the song '%s' by '%s' and provide detailed insights in JSON format.
+
+            Return a JSON object with the following structure:
+            {
+                "analysis": "A detailed 2-3 sentence analysis of the track's musical characteristics, production quality, and emotional impact",
+                "moods": ["List", "of", "4-6", "mood", "keywords"],
+                "genre": "Primary genre classification",
+                "tempo": 120,
+                "key": "Musical key (e.g., C Major, D Minor)",
+                "energy": 7,
+                "similarArtists": ["List", "of", "4-6", "similar", "artists"],
+                "recommendedFor": "A 1-2 sentence recommendation about when and where to listen to this song"
+            }
+
+            Important:
+            - The 'tempo' should be an estimated BPM (beats per minute) between 60-200
+            - The 'energy' should be a rating from 1-10
+            - Base your analysis on the artist's typical style and the song title
+            - Be creative but realistic
+            - Return ONLY the JSON object, no additional text
+            """,
+                song.getTitle(),
+                song.getArtist()
+        );
+    }
     private void updateSongMetadata(Song song, SongRequest request) {
         song.setTitle(request.getTitle());
         song.setArtist(request.getArtist());

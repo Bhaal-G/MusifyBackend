@@ -2,6 +2,7 @@ package com.nb.musify.controller;
 
 
 import com.nb.musify.dto.request.PlaylistRequest;
+import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PlaylistResponse;
 import com.nb.musify.entity.Playlist;
 import com.nb.musify.service.PlaylistService;
@@ -12,10 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -56,4 +54,65 @@ public class PlaylistController {
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @PatchMapping("/updatePlaylistPrivacy/{id}")
+    public ResponseEntity<PlaylistResponse> updatePlaylistPrivacy(
+            @PathVariable Long id,
+            @RequestParam("isPublic") Boolean isPublic,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        PlaylistResponse response =
+                playlistService.updatePlaylistPrivacy(id, isPublic, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/addSongToPlaylist/{playlistId}")
+    public ResponseEntity<MessageResponse> addSongToPlaylist(
+            @PathVariable Long playlistId,
+            @RequestParam("songId") Long songId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        MessageResponse response =
+                playlistService.addSongToPlaylist(playlistId, songId, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/removeSongFromPlaylist/{playlistId}")
+    public ResponseEntity<MessageResponse> removeSongFromPlaylist(
+            @PathVariable Long playlistId,
+            @RequestParam("songId") Long songId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        MessageResponse response =
+                playlistService.removeSongFromPlaylist(playlistId, songId, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/reorderSongInPlaylist/{playlistId}")
+    public ResponseEntity<MessageResponse> reorderSongInPlaylist(
+            @PathVariable Long playlistId,
+            @RequestParam("songId") Long songId,
+            @RequestParam("newPosition") Integer newPosition,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        MessageResponse response =
+                playlistService.reorderSongInPlaylist(
+                        playlistId, songId, newPosition, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+
 }

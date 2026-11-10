@@ -1,9 +1,12 @@
 package com.nb.musify.serviceImpl;
 
 import com.nb.musify.dto.request.PlaylistRequest;
+import com.nb.musify.dto.response.MessageResponse;
 import com.nb.musify.dto.response.PlaylistResponse;
 import com.nb.musify.entity.AppUser;
 import com.nb.musify.entity.Playlist;
+import com.nb.musify.entity.PlaylistSong;
+import com.nb.musify.entity.Song;
 import com.nb.musify.repository.AppUserRepository;
 import com.nb.musify.repository.PlaylistRepository;
 import com.nb.musify.repository.PlaylistSongRepository;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -57,6 +61,124 @@ public class PlaylistServiceImpl implements PlaylistService {
         Playlist savedPlaylist = playlistRepository.save(playlist);
         return PlaylistResponse.fromEntity(savedPlaylist,baseUrl);
     }
+
+    @Override
+    public PlaylistResponse updatePlaylistPrivacy(Long id, Boolean isPublic, String email) {
+        Playlist playlist = validatePlaylistAccess(id, email);
+        playlist.setIsPublic(isPublic);
+
+        Playlist updatePlaylist = playlistRepository.save(playlist);
+
+        return PlaylistResponse.fromEntity(updatePlaylist,baseUrl);
+    }
+
+    @Override
+    public MessageResponse addSongToPlaylist(Long playlistId, Long songId, String email) {
+
+        Playlist playlist = validatePlaylistAccess(playlistId,email);
+
+        Song song = songRepository.findById(songId)
+                .orElseThrow(()-> new RuntimeException("Song Not found"));
+
+        if(playlistSongRepository.existsByPlaylistIdAndSongId(playlistId,songId)){
+            throw new RuntimeException("Song already exists in playlist");
+        }
+        List<PlaylistSong> existingSongs = playlistSongRepository.findByPlaylistIdOrderByPositionAsc(playlistId);
+        int nextPosition = existingSongs.isEmpty() ? 1: existingSongs.get(existingSongs.size()-1).getPosition()+1;
+
+        PlaylistSong playlistSong = new PlaylistSong();
+        playlistSong.setPlaylist(playlist);
+        playlistSong.setSong(song);
+        playlistSong.setPosition(nextPosition);
+
+        playlistSongRepository.save(playlistSong);
+        return new MessageResponse("Song Added to playlist successfully");
+    }
+
+    @Override
+    public MessageResponse removeSongFromPlaylist(Long playlistId, Long songId, String email) {
+        validatePlaylistAccess(playlistId,email);
+        PlaylistSong playlistSong = playlistSongRepository.findByPlaylistIdAndSongId(playlistId,songId)
+                .orElseThrow(()-> new RuntimeException("Song not found in playlist"));
+
+        int removedPosition = playlistSong.getPosition();
+
+        playlistSongRepository.delete(playlistSong);
+
+        List<PlaylistSong> songAfterRemoved = playlistSongRepository.findByPlaylistIdOrderByPositionAsc(playlistId);
+        for (PlaylistSong song : songAfterRemoved){
+            if(song.getPosition() > removedPosition){
+                song.setPosition(song.getPosition()-1);
+                playlistSongRepository.save(song);
+            }
+        }
+        return new MessageResponse("Song Removed from playlist successfully");
+    }
+
+    @Override
+    public MessageResponse reorderSongInPlaylist(Long playlistId, Long songId, Integer newPosition, String email) {
+        validatePlaylistAccess(playlistId,email);
+
+        PlaylistSong playlistSong = playlistSongRepository.findByPlaylistIdAndSongId(playlistId,songId)
+                .orElseThrow(()-> new RuntimeException("Song not found in playlist"));
+
+        List<PlaylistSong> allSongs = playlistSongRepository.findByPlaylistIdOrderByPositionAsc(playlistId);
+
+        if (newPosition < 1 || newPosition > allSongs.size()){
+            throw new RuntimeException("Invalid position . Must be between 1 and "+ allSongs.size());
+        }
+        int currentPosition = playlistSong.getPosition();
+
+        if(currentPosition == newPosition){
+            return new MessageResponse("Song is already at position "+ newPosition);
+        }
+
+        if (newPosition> currentPosition){
+            for (PlaylistSong song: allSongs){
+                if(song.getPosition()>currentPosition && song.getPosition() <= newPosition){
+                    song.setPosition(song.getPosition()-1);
+                    playlistSongRepository.save(song);
+                }
+            }
+        }else {
+            for (PlaylistSong song: allSongs){
+                song.setPosition(song.getPosition()+1);
+                playlistSongRepository.save(song);
+            }
+        }
+
+        playlistSong.setPosition(newPosition);
+        playlistSongRepository.save(playlistSong);
+
+        List<PlaylistSong> finalSongs = playlistSongRepository.findByPlaylistIdOrderByPositionAsc(playlistId);
+        int normalizedPosition = 1;
+
+        for (PlaylistSong song: finalSongs){
+            if(song.getPosition() !=normalizedPosition){
+                song.setPosition(normalizedPosition);
+                playlistSongRepository.save(song);
+            }
+            normalizedPosition++;
+        }
+        return new MessageResponse("Song reordered successfully to position "+ newPosition);
+    }
+
+    private Playlist validatePlaylistAccess(Long id, String email) {
+        Playlist playlist = playlistRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Playlist not found"));
+
+        AppUser appUser = getUserByEmail(email);
+
+        boolean isOwner = playlist.getAppUser().getId().equals(appUser.getId());
+        boolean isAdmin = "ADMIN".equals(appUser.getRole());
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("You don't have permission to modify this playlist");
+        }
+
+        return playlist;
+    }
+
 
     private AppUser getUserByEmail(String email) {
         return appUserRepository.findByEmail(email)

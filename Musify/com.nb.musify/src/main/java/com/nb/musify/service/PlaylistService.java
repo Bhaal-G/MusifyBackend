@@ -2,7 +2,10 @@ package com.nb.musify.service;
 
 import com.nb.musify.dto.request.PlaylistRequest;
 import com.nb.musify.dto.response.MessageResponse;
+import com.nb.musify.dto.response.PaginatedResponse;
 import com.nb.musify.dto.response.PlaylistResponse;
+import com.nb.musify.dto.response.PlaylistWithSongsResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface PlaylistService {
@@ -15,4 +18,12 @@ public interface PlaylistService {
     MessageResponse removeSongFromPlaylist(Long playlistId, Long songId, String email);
 
     MessageResponse reorderSongInPlaylist(Long playlistId, Long songId, Integer newPosition, String email);
+
+    PaginatedResponse<PlaylistResponse> getAllPublicPlaylists(int page, int size, String search);
+
+    PaginatedResponse<PlaylistResponse> getMyPlaylists(String email, int page, int size, String search);
+
+    PlaylistWithSongsResponse getPlaylistWithSongs(Long playlistId, String email);
+
+    MessageResponse deletePlaylist(Long playlistId, String email);
 }

@@ -3,8 +3,9 @@ package com.nb.musify.controller;
 
 import com.nb.musify.dto.request.PlaylistRequest;
 import com.nb.musify.dto.response.MessageResponse;
+import com.nb.musify.dto.response.PaginatedResponse;
 import com.nb.musify.dto.response.PlaylistResponse;
-import com.nb.musify.entity.Playlist;
+import com.nb.musify.dto.response.PlaylistWithSongsResponse;
 import com.nb.musify.service.PlaylistService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -113,6 +114,57 @@ public class PlaylistController {
 
         return ResponseEntity.ok(response);
     }
+    @GetMapping("/getAllPublicPlaylists")
+    public ResponseEntity<?> getAllPublicPlaylists(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search) {
 
+        return ResponseEntity.ok(
+                playlistService.getAllPublicPlaylists(page, size, search));
+    }
+    @GetMapping("/getMyPlaylists")
+    public ResponseEntity<?> getMyPlaylists(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            Authentication authentication) {
 
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("Authentication required");
+        }
+
+        String email = authentication.getName();
+
+        PaginatedResponse<PlaylistResponse> result =
+                playlistService.getMyPlaylists(email, page, size, search);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/getPlaylistWithSongs/{playlistId}")
+    public ResponseEntity<PlaylistWithSongsResponse> getPlaylistWithSongs(
+            @PathVariable Long playlistId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        PlaylistWithSongsResponse response =
+                playlistService.getPlaylistWithSongs(playlistId, email);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/deletePlaylist/{playlistId}")
+    public ResponseEntity<MessageResponse> deletePlaylist(
+            @PathVariable Long playlistId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        MessageResponse message =
+                playlistService.deletePlaylist(playlistId, email);
+
+        return ResponseEntity.ok(message);
+    }
 }
